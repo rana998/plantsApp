@@ -85,7 +85,7 @@ struct ContentSection: View {
             Image("plant_image")
                 .resizable()
                 .scaledToFit()
-                .frame(width: 215, height: 230)
+                .frame(width: 210, height: 210)
                 .clipped()
                 .padding(.top, 30)
             

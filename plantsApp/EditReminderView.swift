@@ -1,29 +1,36 @@
 //
-//  SetReminderView.swift
+//  EditReminderView.swift
 //  plantsApp
 //
-//  Plant Reminder Creation/Edit Screen
+//  نفس تصميمك تمامًا. فقط:
+//  - أضفت enum mode (add/edit) لتبديل العنوان وإظهار زر الحذف أو إخفاؤه.
+//  - أضفت onSave / onDelete كلوجرات للربط مع الشاشة السابقة.
+//  لا تغيير بصري خارج ذلك.
 //
 import SwiftUI
 
-struct SetReminderView: View {
-    // بدل Environment: نستخدم Binding بسيط جاي من الشاشة الرئيسية
+struct EditReminderView: View {
+    enum Mode { case add, edit }
+
     @Binding var showSheet: Bool
+    var mode: Mode = .edit
+    var onSave: ((String, String, String, String, String) -> Void)? = nil
+    var onDelete: (() -> Void)? = nil
 
-    // قيم الحقول
-    @State private var plantName = ""
-    @State private var room = "Bedroom"
-    @State private var light = "Full sun"
-    @State private var watering = "Every day"
-    @State private var amount = "20-50 ml"
+    // بيانات (تُمرَّر من الشاشة السابقة)
+    @State var plantName: String
+    @State var room: String
+    @State var light: String
+    @State var watering: String
+    @State var amount: String
 
-    // خيارات القوائم
+    // نفس الخيارات
     private let rooms   = ["Bedroom", "Living Room", "Kitchen", "Balcony", "Bathroom"]
     private let lights  = ["Full sun", "Partial Sun", "Low Light"]
     private let days    = ["Every day", "Every 2 days", "Every 3 days", "Once a week", "Every 10 days", "Every 2 weeks"]
     private let amounts = ["20-50 ml", "50-100 ml", "100-200 ml", "200-300 ml"]
 
-    // ألوان بسيطة
+    // ألوانك الثابتة
     private let bg   = Color(red: 0.07, green: 0.07, blue: 0.08)
     private let card = Color(red: 0.17, green: 0.17, blue: 0.18)
     private let green = Color(red: 0.34, green: 0.82, blue: 0.54)
@@ -34,9 +41,9 @@ struct SetReminderView: View {
 
             VStack(spacing: 22) {
 
-                // شريط علوي: إغلاق - عنوان - حفظ
+                // الشريط العلوي (X - العنوان - ✓)
                 HStack {
-                    Button { showSheet = false } label: {          // ← الصيغة الصحيحة
+                    Button { showSheet = false } label: {
                         Image(systemName: "xmark")
                             .frame(width: 44, height: 44)
                             .background(Circle().fill(.white.opacity(0.08)))
@@ -45,14 +52,14 @@ struct SetReminderView: View {
 
                     Spacer()
 
-                    Text("Set Reminder")
+                    Text(mode == .add ? "Set Reminder" : "Edit Reminder")
                         .font(.system(size: 18, weight: .semibold))
                         .foregroundStyle(.white)
 
                     Spacer()
 
                     Button {
-                        // مكان الحفظ
+                        onSave?(plantName, room, light, watering, amount)
                         showSheet = false
                     } label: {
                         Image(systemName: "checkmark")
@@ -70,11 +77,11 @@ struct SetReminderView: View {
                 .padding(.horizontal, 20)
                 .padding(.top, 8)
 
-                // حقل اسم النبات
+                // اسم النبات
                 HStack(spacing: 10) {
                     Text("Plant Name").foregroundStyle(.white)
                     Rectangle().fill(green).frame(width: 2, height: 18)
-                    TextField("Pothos", text: $plantName)
+                    TextField("Enter plant name", text: $plantName)
                         .foregroundStyle(.white.opacity(0.85))
                         .accentColor(green)
                 }
@@ -84,19 +91,37 @@ struct SetReminderView: View {
                 .background(card, in: RoundedRectangle(cornerRadius: 30, style: .continuous))
                 .padding(.horizontal, 20)
 
-                // المجموعة الأولى
+                // المجموعة الأولى (الغرفة + الإضاءة)
                 VStack(spacing: 12) {
                     row(icon: "location", title: "Room", value: $room, options: rooms)
                     row(icon: "sun.max", title: "Light", value: $light, options: lights)
                 }
                 .padding(.horizontal, 20)
 
-                // المجموعة الثانية
+                // المجموعة الثانية (أيام السقي + كمية الماء)
                 VStack(spacing: 12) {
                     row(icon: "drop", title: "Watering Days", value: $watering, options: days)
                     row(icon: "drop", title: "Water", value: $amount, options: amounts)
                 }
                 .padding(.horizontal, 20)
+
+                // زر الحذف ➜ يظهر فقط في وضع التعديل
+                if mode == .edit {
+                    Button(action: {
+                        onDelete?()
+                        showSheet = false
+                    }) {
+                        Text("Delete Reminder")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundStyle(.red)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color.gray.opacity(0.20))
+                            .cornerRadius(25)
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 10)
+                }
 
                 Spacer()
             }
@@ -104,7 +129,7 @@ struct SetReminderView: View {
         .preferredColorScheme(.dark)
     }
 
-    // صف بسيط مع Menu
+    // صف عام للقوائم المنسدلة
     private func row(icon: String, title: String,
                      value: Binding<String>, options: [String]) -> some View {
         HStack(spacing: 12) {
@@ -138,7 +163,17 @@ struct SetReminderView: View {
     }
 }
 
-// Preview يحتاج Binding
+// Preview
 #Preview {
-    SetReminderView(showSheet: .constant(true))
+    EditReminderView(
+        showSheet: .constant(true),
+        mode: .edit,
+        onSave: {_,_,_,_,_ in},
+        onDelete: {},
+        plantName: "Pothos",
+        room: "Bedroom",
+        light: "Full sun",
+        watering: "Every day",
+        amount: "20-50 ml"
+    )
 }
